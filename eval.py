@@ -30,15 +30,14 @@ model.load_state_dict(model_params)
 model = model.cuda()
 model.eval()
 
-batch_size = 16
-num_image_slice = 8
-image_size = (256, 256)
+batch_size = 8
+image_size = (480, 480)
 
 dataset_dir_train = Path("E:/vrc_rotation/dataset/resized/")
 dataset_dir_test = Path("E:/vrc_rotation/dataset/resized_validation_aoinu/")
 
-#load_dir = dataset_dir_train
-load_dir = dataset_dir_test
+load_dir = dataset_dir_train
+#load_dir = dataset_dir_test
 
 save_dir = Path("E:/vrc_rotation/dataset/eval_resized/")
 logfile_path = save_dir / "log.txt"
@@ -56,27 +55,12 @@ for batch_i in range(len(eval_images_path)//batch_size + 1):
     
     for idx in range(batch_start_idx, batch_end_idx):
         image = Image.open(eval_images_path[idx])
-        if np.floor(min(image.size)/256) >= 2.0:
-            factor = int(np.floor(min(image.size)/256))
-            image = torchvision.transforms.functional.resize(image, (image.size[0]//factor, image.size[1]//factor))
+        width, height = image.size
+        pad_size = max(width, height)
+        image = torchvision.transforms.functional.pad(image, ((pad_size-width) // 2, (pad_size-height) // 2))
+        image = torchvision.transforms.functional.resize(image, image_size)
         
-        w, h = image.size
-        #print(w, h)
-        gap_w = w - image_size[0]
-        gap_h = h - image_size[1]
-        bias_w = 0 if gap_w > gap_h else gap_w / 2
-        bias_h = 0 if gap_h > gap_w else gap_h / 2
-        gap_w, gap_h = (gap_w, 0) if gap_w > gap_h else (0, gap_h)
-    
-        crop_image_list = [
-                torchvision.transforms.functional.crop(
-                        image,
-                        bias_h + i * gap_h / num_image_slice,
-                        bias_w + i * gap_w / num_image_slice,
-                        256, 256)
-                for i in range(num_image_slice)]
-        
-        rotated_images = [torchvision.transforms.functional.rotate(im, (90 * i)) for im in crop_image_list for i in range(4)]
+        rotated_images = [torchvision.transforms.functional.rotate(image, (90 * i)) for i in range(4)]
         images += rotated_images
     
     softmax = nn.Softmax(dim=1)
@@ -85,43 +69,36 @@ for batch_i in range(len(eval_images_path)//batch_size + 1):
         batch_x = torch.cat([torchvision.transforms.ToTensor()(im)[0:3,:,:].view(1, 3, image_size[0], image_size[1]) for im in images], dim=0)
         batch_x = batch_x.cuda()
         
-        # [batch*slice*rotation, prob]
+        # [batch*rotation, prob]
         estimated_prob = softmax(model(batch_x))
         
-        # [batch*slice, rotation, prob]
+        # [batch, rotation, prob]
         estimated_prob = estimated_prob.reshape(-1, 4, 2)
         #_, estimated = estimated_prob[:, :, 0].max(dim=1)
         log_estimated_prob = estimated_prob.log()
         sum_log_estimated_prob = log_estimated_prob.sum(dim=1, keepdim=True)
         log_likelihood = sum_log_estimated_prob[:,:,1].repeat(1, 4) - log_estimated_prob[:,:,1] + log_estimated_prob[:,:,0]
-        #_, estimated = log_likelihood.max(dim=1)
-        estimated_prob = softmax(log_likelihood.exp())
-        
-        # [batch, slice, prob]
-        estimated_prob = softmax(log_likelihood.exp()).reshape(-1, num_image_slice, 4)
-        a = estimated_prob.prod(dim=1)
-        log_estimated_prob = estimated_prob.log()
-        log_likelihood = log_estimated_prob.sum(dim=1)
         _, estimated = log_likelihood.max(dim=1)
-        #estimated_prob_all = softmax(log_likelihood.exp())
-        estimated_prob_all = softmax(log_likelihood)
+        #estimated_prob = softmax(log_likelihood.exp())
+        estimated_prob = softmax(log_likelihood)
         
         estimated = estimated.cpu().detach()
-        estimated_prob_all = estimated_prob_all.cpu().detach()
+        estimated_prob = estimated_prob.cpu().detach()
     
     for i, idx in enumerate(range(batch_start_idx, batch_end_idx)):
         estimated_rotation = int(estimated[i])
-        estimated_prob = estimated_prob_all[i,:].numpy()
+        estimated_prob_i = estimated_prob[i,:].numpy()
         image = cv2.imread(eval_images_path[idx])
         if (estimated_rotation > 0):
             image = cv2.rotate(image, 3-estimated_rotation)
         save_path = save_dir / Path(eval_images_path[idx]).name
         
-        # for debugging
         #cv2.imwrite(str(save_path), image)
+        # for debugging
         if (estimated_rotation > 0):
             cv2.imwrite(str(save_path), image)
-        output_string = f"{Path(eval_images_path[idx]).name}: {90*estimated_rotation}, [{', '.join([f'{p:.3f}' for p in estimated_prob])}]"
+        
+        output_string = f"{Path(eval_images_path[idx]).name}: {90*estimated_rotation}, [{', '.join([f'{p:.3f}' for p in estimated_prob_i])}]"
         print(output_string)
         with open(logfile_path, "a") as fout:
             fout.write(output_string+"\n")

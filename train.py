@@ -33,13 +33,13 @@ if __name__ == "__main__":
     #with open(logfile_path, "w") as fout:
     #    pass
     
-    batch_size = 128
+    batch_size = 32
     num_epoch = 10000
     initial_epoch = 0
     
-    dataset_train = VRCDataset(dataset_dir_train, (256, 256))
+    dataset_train = VRCDataset(dataset_dir_train, (480, 480))
     dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=8)
-    dataset_test = VRCDataset(dataset_dir_test, (256, 256))
+    dataset_test = VRCDataset(dataset_dir_test, (480, 480))
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=8)
     
     larning_rate = 0.001
