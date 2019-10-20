@@ -30,16 +30,16 @@ model.load_state_dict(model_params)
 model = model.cuda()
 model.eval()
 
-batch_size = 8
+batch_size = 32
 image_size = (480, 480)
 
-dataset_dir_train = Path("E:/vrc_rotation/dataset/resized/")
-dataset_dir_test = Path("E:/vrc_rotation/dataset/resized_validation_aoinu/")
+dataset_dir_train = Path("E:/vrc_rotation/dataset/collection/")
+dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated/aoinu/")
 
-load_dir = dataset_dir_train
-#load_dir = dataset_dir_test
+#load_dir = dataset_dir_train
+load_dir = dataset_dir_test
 
-save_dir = Path("E:/vrc_rotation/dataset/eval_resized/")
+save_dir = Path("E:/vrc_rotation/dataset/eval/")
 logfile_path = save_dir / "log.txt"
 save_dir.mkdir(exist_ok=True)
 

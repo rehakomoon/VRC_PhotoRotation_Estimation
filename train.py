@@ -19,12 +19,12 @@ import torch.optim as optim
 
 from dataset import VRCDataset
 from model import Model
-
+from tqdm import tqdm
 
 if __name__ == "__main__":
 
-    dataset_dir_train = Path("E:/vrc_rotation/dataset/resized/")
-    dataset_dir_test = Path("E:/vrc_rotation/dataset/resized_validation_aoinu/")
+    dataset_dir_train = Path("E:/vrc_rotation/dataset/collection/")
+    dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated/aoinu/")
     log_dir = Path("E:/vrc_rotation/log/")
     logfile_path = Path("E:/vrc_rotation/log/log.txt")
     
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     #with open(logfile_path, "w") as fout:
     #    pass
     
-    batch_size = 32
+    batch_size = 64
     num_epoch = 10000
     initial_epoch = 0
     
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         num_seen = 0
         
         model.train()
-        for i, (batch_x, batch_y) in enumerate(dataloader_train):
+        for i, (batch_x, batch_y) in tqdm(enumerate(dataloader_train), leave=False):
             batch_x = batch_x.cuda()
             batch_y = batch_y.cuda()
             
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             sum_loss += loss.item()
             sum_correct += correct.item()
             num_seen += batch_size
-
+            
         if True:
             print(f'e: {epoch},\t loss: {sum_loss/num_seen},\t acc: {sum_correct/num_seen}')
             with open(logfile_path, "a") as fout:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             model.eval()
             
             with torch.no_grad():
-                for i, (batch_x, batch_y) in enumerate(dataloader_test):
+                for i, (batch_x, batch_y) in tqdm(enumerate(dataloader_test), leave=False):
                     batch_x = batch_x.cuda()
                     batch_y = batch_y.cuda()
                     

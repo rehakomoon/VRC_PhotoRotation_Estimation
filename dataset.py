@@ -25,6 +25,9 @@ class VRCDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         image = Image.open(self.file_list[idx])
+        max_factor = max([image.size[i]/self.image_size[i] for i in range(2)])
+        image = torchvision.transforms.functional.resize(image,(int(image.size[1]/max_factor), int(image.size[0]/max_factor)))
+        
         image = self.transform_flip(image)
         width, height = image.size
         pad_size = max(width, height)
@@ -35,6 +38,6 @@ class VRCDataset(torch.utils.data.Dataset):
         rotation_angle = torch.LongTensor(1).random_(0, 3) + 1
         label = (rotation_flag == 0).type(torch.LongTensor)
         image = torchvision.transforms.functional.rotate(image, label * (90 * rotation_angle))
-        image = torchvision.transforms.ToTensor()(image)
+        image = torchvision.transforms.ToTensor()(image)[0:3,:,:]
 
         return image, label
