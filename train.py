@@ -23,8 +23,8 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
 
-    dataset_dir_train = Path("E:/vrc_rotation/dataset/collection/")
-    dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated/aoinu/")
+    dataset_dir_train = Path("E:/vrc_rotation/dataset/anotated/")
+    dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated_eval/")
     log_dir = Path("E:/vrc_rotation/log/")
     logfile_path = Path("E:/vrc_rotation/log/log.txt")
     

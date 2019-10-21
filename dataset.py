@@ -16,8 +16,9 @@ class VRCDataset(torch.utils.data.Dataset):
         self.dataset_dir = Path(dataset_dir)
         self.image_size = image_size
         
-        self.file_list = [str(p.absolute()) for p in dataset_dir.glob('*.png')]
+        self.file_list = [str(p.absolute()) for d in dataset_dir.iterdir() for p in d.glob('*.png')]
         self.num_data = len(self.file_list)
+ 
         self.transform_flip = torchvision.transforms.RandomHorizontalFlip(p=0.5)
         
     def __len__(self):
