@@ -33,7 +33,7 @@ if __name__ == "__main__":
     #with open(logfile_path, "w") as fout:
     #    pass
     
-    batch_size = 64
+    batch_size = 32
     num_epoch = 10000
     initial_epoch = 0
     
@@ -43,6 +43,7 @@ if __name__ == "__main__":
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=8)
     
     larning_rate = 0.001
+    #larning_rate = 0.0001
     weight_decay = 0.0
     
     model = Model()

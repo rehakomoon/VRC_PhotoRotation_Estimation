@@ -30,14 +30,16 @@ model.load_state_dict(model_params)
 model = model.cuda()
 model.eval()
 
-batch_size = 4
+batch_size = 32
 image_size = (480, 480)
 
 dataset_dir_train = Path("E:/vrc_rotation/dataset/anotated/")
 dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated_eval/")
+dataset_dir_eval = Path("E:/vrc_rotation/dataset/eval/")
 
 #dataset_dir = dataset_dir_train
 dataset_dir = dataset_dir_test
+#dataset_dir = dataset_dir_eval
 
 for user_dir in dataset_dir.iterdir():
     username = user_dir.stem
@@ -47,6 +49,8 @@ for user_dir in dataset_dir.iterdir():
     save_dir.mkdir(exist_ok=True)
     
     eval_images_path = [str(p.absolute()) for p in user_dir.glob('*.png')]
+    num_images = len(eval_images_path)
+    num_error = 0
     
     for batch_i in range(len(eval_images_path)//batch_size + 1):
         batch_start_idx = batch_i * batch_size
@@ -65,6 +69,10 @@ for user_dir in dataset_dir.iterdir():
             
             rotated_images = [torchvision.transforms.functional.rotate(image, (90 * i)) for i in range(4)]
             images += rotated_images
+            
+            image = torchvision.transforms.functional.hflip(image)
+            rotated_images = [torchvision.transforms.functional.rotate(image, (90 * i)) for i in range(4)]
+            images += rotated_images
         
         softmax = nn.Softmax(dim=1)
         
@@ -75,12 +83,21 @@ for user_dir in dataset_dir.iterdir():
             # [batch*rotation, prob]
             estimated_prob = softmax(model(batch_x))
             
-            # [batch, rotation, prob]
-            estimated_prob = estimated_prob.reshape(-1, 4, 2)
+            # [batch, flip, rotation, prob]
+            estimated_prob = estimated_prob.reshape(-1, 2, 4, 2)
             #_, estimated = estimated_prob[:, :, 0].max(dim=1)
             log_estimated_prob = estimated_prob.log()
-            sum_log_estimated_prob = log_estimated_prob.sum(dim=1, keepdim=True)
-            log_likelihood = sum_log_estimated_prob[:,:,1].repeat(1, 4) - log_estimated_prob[:,:,1] + log_estimated_prob[:,:,0]
+            
+            # [batch, flip, 1, prob]
+            sum_log_estimated_prob = log_estimated_prob.sum(dim=2, keepdim=True)
+            
+            # [batch, flip, rotation, prob] -> [batch, flip, rotation]
+            log_likelihood = sum_log_estimated_prob[:,:,:,1].repeat(1, 1, 4) - log_estimated_prob[:,:,:,1] + log_estimated_prob[:,:,:,0]
+
+            # [batch, flip, rotation] -> [batch, rotation]
+            log_likelihood = log_likelihood.sum(dim=1)
+            
+            # [batch, rotation]
             _, estimated = log_likelihood.max(dim=1)
             #estimated_prob = softmax(log_likelihood.exp())
             estimated_prob = softmax(log_likelihood)
@@ -100,8 +117,14 @@ for user_dir in dataset_dir.iterdir():
             # for debugging
             if (estimated_rotation > 0):
                 cv2.imwrite(str(save_path), image)
+                num_error += 1
             
             output_string = f"{Path(eval_images_path[idx]).name}: {90*estimated_rotation}, [{', '.join([f'{p:.3f}' for p in estimated_prob_i])}]"
             print(output_string)
             with open(logfile_path, "a") as fout:
                 fout.write(output_string+"\n")
+        
+    output_string = f"{num_images} images evaluated. {num_error} images rotated. {num_error/num_images}, {1.0-num_error/num_images}"
+    print(output_string)
+    with open(logfile_path, "a") as fout:
+        fout.write(output_string+"\n")
