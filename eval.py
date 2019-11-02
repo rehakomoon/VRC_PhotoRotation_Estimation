@@ -30,7 +30,7 @@ model.load_state_dict(model_params)
 model = model.cuda()
 model.eval()
 
-batch_size = 32
+batch_size = 16
 image_size = (480, 480)
 
 dataset_dir_train = Path("E:/vrc_rotation/dataset/anotated/")
@@ -38,15 +38,18 @@ dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated_eval/")
 dataset_dir_eval = Path("E:/vrc_rotation/dataset/eval/")
 
 #dataset_dir = dataset_dir_train
-dataset_dir = dataset_dir_test
-#dataset_dir = dataset_dir_eval
+#dataset_dir = dataset_dir_test
+dataset_dir = dataset_dir_eval
+#dataset_dir = Path("E:/vrc_gan/dataset_org_mbrn/tmp/")
 
 for user_dir in dataset_dir.iterdir():
     username = user_dir.stem
     
     save_dir = Path(f"E:/vrc_rotation/dataset/eval_{username}/")
+    t_save_dir = Path(f"E:/vrc_rotation/dataset/eval_{username}_t/")
     logfile_path = save_dir / "log.txt"
     save_dir.mkdir(exist_ok=True)
+    t_save_dir.mkdir(exist_ok=True)
     
     eval_images_path = [str(p.absolute()) for p in user_dir.glob('*.png')]
     num_images = len(eval_images_path)
@@ -108,17 +111,27 @@ for user_dir in dataset_dir.iterdir():
         for i, idx in enumerate(range(batch_start_idx, batch_end_idx)):
             estimated_rotation = int(estimated[i])
             estimated_prob_i = estimated_prob[i,:].numpy()
-            image = cv2.imread(eval_images_path[idx])
-            if (estimated_rotation > 0):
-                image = cv2.rotate(image, 3-estimated_rotation)
-            save_path = save_dir / Path(eval_images_path[idx]).name
+
+            #save_flag = True
+            save_flag = False
             
-            #cv2.imwrite(str(save_path), image)
-            # for debugging
             if (estimated_rotation > 0):
-                cv2.imwrite(str(save_path), image)
+                save_flag = True
                 num_error += 1
             
+            if (save_flag):
+                image = cv2.imread(eval_images_path[idx])
+                if (estimated_rotation > 0):
+                    image = cv2.rotate(image, 3-estimated_rotation)
+                save_path = save_dir / Path(eval_images_path[idx]).name
+                cv2.imwrite(str(save_path), image)
+            
+            if True:
+                if (estimated_prob_i[0] < 0.9 and estimated_rotation == 0):
+                    image = cv2.imread(eval_images_path[idx])
+                    save_path = t_save_dir / Path(eval_images_path[idx]).name
+                    cv2.imwrite(str(save_path), image)
+
             output_string = f"{Path(eval_images_path[idx]).name}: {90*estimated_rotation}, [{', '.join([f'{p:.3f}' for p in estimated_prob_i])}]"
             print(output_string)
             with open(logfile_path, "a") as fout:

@@ -17,14 +17,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from dataset import VRCDataset
+from dataset import VRCDataset, VRCDatasetTest
 from model import Model
 from tqdm import tqdm
 
 if __name__ == "__main__":
 
-    dataset_dir_train = Path("E:/vrc_rotation/dataset/anotated/")
-    dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated_eval/")
+    #dataset_dir_train = Path("E:/vrc_rotation/dataset/anotated_resized/")
+    dataset_dir_train = Path("C:/dataset/anotated_resized/")
+    dataset_dir_test = Path("E:/vrc_rotation/dataset/anotated_eval_resized/")
     log_dir = Path("E:/vrc_rotation/log/")
     logfile_path = Path("E:/vrc_rotation/log/log.txt")
     
@@ -33,17 +34,18 @@ if __name__ == "__main__":
     #with open(logfile_path, "w") as fout:
     #    pass
     
-    batch_size = 32
+    batch_size = 64
     num_epoch = 10000
     initial_epoch = 0
     
     dataset_train = VRCDataset(dataset_dir_train, (480, 480))
     dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=8)
-    dataset_test = VRCDataset(dataset_dir_test, (480, 480))
-    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=8)
+    dataset_test = VRCDatasetTest(dataset_dir_test, (480, 480))
+    dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=False, num_workers=8)
     
-    larning_rate = 0.001
-    #larning_rate = 0.0001
+    #larning_rate = 0.001
+    larning_rate = 0.0001
+    #larning_rate = 0.00001
     weight_decay = 0.0
     
     model = Model()

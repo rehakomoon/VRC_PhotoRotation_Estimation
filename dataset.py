@@ -26,19 +26,38 @@ class VRCDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         image = Image.open(self.file_list[idx])
-        max_factor = max([image.size[i]/self.image_size[i] for i in range(2)])
-        image = torchvision.transforms.functional.resize(image,(int(image.size[1]/max_factor), int(image.size[0]/max_factor)))
-        
         image = self.transform_flip(image)
-        width, height = image.size
-        pad_size = max(width, height)
-        image = torchvision.transforms.functional.pad(image, ((pad_size-width) // 2, (pad_size-height) // 2))
-        image = torchvision.transforms.functional.resize(image, self.image_size)
 
         rotation_flag = torch.LongTensor(1).random_(0, 2)
         rotation_angle = torch.LongTensor(1).random_(0, 3) + 1
         label = (rotation_flag == 0).type(torch.LongTensor)
         image = torchvision.transforms.functional.rotate(image, label * (90 * rotation_angle))
+        image = torchvision.transforms.ToTensor()(image)[0:3,:,:]
+
+        return image, label
+
+class VRCDatasetTest(torch.utils.data.Dataset):
+    def __init__(self, dataset_dir, image_size):
+        self.dataset_dir = Path(dataset_dir)
+        self.image_size = image_size
+        
+        self.file_list = [str(p.absolute()) for d in dataset_dir.iterdir() for p in d.glob('*.png')]
+        self.num_data = len(self.file_list)
+        
+    def __len__(self):
+        return self.num_data * 8
+
+    def __getitem__(self, idx):
+        image_idx = idx//8
+        flip_flag = (idx%8) < 4
+        rotation_angle = idx%4
+        label = torch.LongTensor([rotation_angle != 0])
+
+        image = Image.open(self.file_list[image_idx])
+        if flip_flag:
+            image = torchvision.transforms.functional.hflip(image)
+        
+        image = torchvision.transforms.functional.rotate(image, 90 * rotation_angle)
         image = torchvision.transforms.ToTensor()(image)[0:3,:,:]
 
         return image, label

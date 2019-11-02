@@ -5,27 +5,40 @@ Created on Wed Oct 16 15:27:35 2019
 @author: rehakomoon
 """
 
-import cv2
-import numpy as np
+import torchvision
 from pathlib import Path
-import shutil
+from PIL import Image
 
-userlist = ["hakomoon"]
+input_dir = Path("E:/vrc_rotation/dataset/anotated/")
+output_dir = Path("E:/vrc_rotation/dataset/anotated_resized/")
 
-output_dir = Path("E:/vrc_rotation/dataset/collection/")
+#input_dir = Path("E:/vrc_rotation/dataset/anotated_eval/")
+#output_dir = Path("E:/vrc_rotation/dataset/anotated_eval_resized/")
+
+image_size = (480, 480)
+
 output_dir.mkdir(exist_ok=True)
 
-image_idx = 0
+userdir_list = [d.absolute() for d in input_dir.iterdir()]
 
-for username in userlist:
-    input_dir = Path("E:/vrc_rotation/dataset/anotated/" + username + "/")
-    for image_path in input_dir.iterdir():
-        if image_idx%100 == 0:
-            print(image_idx)
-        #img = cv2.imread(str(image_path))
-        #im_height, im_width = img.shape[0:2]
-        shutil.copy(str(image_path), str(output_dir / f"{image_idx:06}.png"))
-        image_idx += 1
-        #output_im_size = (int(im_width/4), int(im_height/4))
-        #resized_img = cv2.resize(img, output_im_size)
-        #cv2.imwrite(str(output_filename), resized_img)
+for userdir in userdir_list:
+    print(userdir.stem)
+    
+    output_user_dir = output_dir / userdir.stem
+    output_user_dir.mkdir(exist_ok=True)
+
+    for image_path in  userdir.glob('*.png'):
+        filename = image_path.name
+        input_path = str(image_path)
+        output_path = str(output_user_dir / filename)
+        
+        image = Image.open(str(image_path))
+        max_factor = max([image.size[i]/image_size[i] for i in range(2)])
+        image = torchvision.transforms.functional.resize(image,(int(image.size[1]/max_factor), int(image.size[0]/max_factor)))
+        
+        width, height = image.size
+        pad_size = max(width, height)
+        image = torchvision.transforms.functional.pad(image, ((pad_size-width) // 2, (pad_size-height) // 2))
+        image = torchvision.transforms.functional.resize(image, image_size)
+        
+        image.save(output_path)
