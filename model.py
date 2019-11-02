@@ -13,15 +13,15 @@ class Model(nn.Module):
         dp_prob = 0.3
         
         super(Model, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, 5)
-        self.bn1 = nn.BatchNorm2d(32)
+        self.conv1 = nn.Conv2d(3, 16, 5)
+        self.bn1 = nn.BatchNorm2d(16)
         self.pool1 = nn.MaxPool2d(2, 2)
         #self.dp1 = nn.Dropout2d(p=dp_prob)
-        self.conv2 = nn.Conv2d(32, 32, 5)
-        self.bn2 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(16, 16, 5)
+        self.bn2 = nn.BatchNorm2d(16)
         self.pool2 = nn.MaxPool2d(2, 2)
         #self.dp2 = nn.Dropout2d(p=dp_prob)
-        self.conv3 = nn.Conv2d(32, 64, 5)
+        self.conv3 = nn.Conv2d(16, 64, 5)
         self.bn3 = nn.BatchNorm2d(64)
         self.pool3 = nn.MaxPool2d(2, 2)
         self.dp3 = nn.Dropout2d(p=dp_prob)
@@ -29,12 +29,12 @@ class Model(nn.Module):
         self.bn4 = nn.BatchNorm2d(64)
         self.pool4 = nn.MaxPool2d(2, 2)
         self.dp4 = nn.Dropout2d(p=dp_prob)
-        self.conv5 = nn.Conv2d(64, 128, 5)
-        self.bn5 = nn.BatchNorm2d(128)
+        self.conv5 = nn.Conv2d(64, 256, 5)
+        self.bn5 = nn.BatchNorm2d(256)
         self.pool5 = nn.MaxPool2d(2, 2)
         self.dp5 = nn.Dropout2d(p=dp_prob)
-        self.conv6 = nn.Conv2d(128, 128, 5)
-        self.bn6 = nn.BatchNorm2d(128)
+        self.conv6 = nn.Conv2d(256, 256, 5)
+        self.bn6 = nn.BatchNorm2d(256)
         self.pool6 = nn.MaxPool2d(2, 2)
         self.dp6 = nn.Dropout2d(p=dp_prob)
         """
@@ -52,11 +52,11 @@ class Model(nn.Module):
         self.dp9 = nn.Dropout2d(p=dp_prob)
         """
         self.gpool = nn.AdaptiveMaxPool2d(1)
-        self.fc1 = nn.Linear(128, 128)
+        self.fc1 = nn.Linear(256, 256)
         self.fdp1 = nn.Dropout2d(p=dp_prob)
-        self.fc2 = nn.Linear(128, 128)
+        self.fc2 = nn.Linear(256, 256)
         self.fdp2 = nn.Dropout2d(p=dp_prob)
-        self.fc3 = nn.Linear(128, 2)
+        self.fc3 = nn.Linear(256, 2)
 
     def forward(self, x):
         batch_size = x.shape[0]
